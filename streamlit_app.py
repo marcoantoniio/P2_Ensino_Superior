@@ -1,151 +1,94 @@
 import streamlit as st
 import pandas as pd
-import math
+import altair as alt
 from pathlib import Path
 
-# Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title='Análise dos dados do Ensino Superior',
+    page_icon=':superhero:',
 )
-
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
 
 @st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+def get_data(path):
+    DATA_FILENAME = Path(__file__).parent/path
+    data_df = pd.read_csv(DATA_FILENAME)
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
+    return data_df
+
+df_faixa_etaria = get_data('data/tabela_doc_faixa_etaria.csv')
+df_cor_raca = get_data('data/tabela_doc_cor_raca.csv')
+
+def pegar_frequencias(
+    df: pd.DataFrame,
+    coluna: str,
+    nome_coluna_1: str,
+    nome_coluna_2: str
+) -> tuple[pd.Series, pd.DataFrame]:
+    """
+    Calcula a frequência dos valores de uma coluna em um DataFrame, 
+    cria um DataFrame com índice resetado e renomeia as colunas.
+
+    Parâmetros:
+    - df: DataFrame onde a coluna está presente.
+    - coluna: Nome da coluna para calcular a frequência.
+    - nome_coluna_1: Nome para a primeira coluna do DataFrame de resultado (ex: categorias).
+    - nome_coluna_2: Nome para a segunda coluna do DataFrame de resultado (ex: frequências).
+
+    Retorna:
+    - frequencia_total: Série com a frequência dos valores (ordenada pelo índice).
+    - frequencia_index: DataFrame com índice resetado e colunas renomeadas.
     """
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+    frequencia_total = df[coluna].value_counts().sort_index()
+    frequencia_index = frequencia_total.reset_index()
+    frequencia_index.columns = [nome_coluna_1, nome_coluna_2]
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+    return frequencia_total, frequencia_index
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
 '''
-# :earth_americas: GDP dashboard
+# Análise dos dados do ensino superior
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
+texto de apresentação
 '''
 
-# Add some spacing
 ''
 ''
 
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
+with st.sidebar:
+    st.header("Filtros")
+    st.subheader("Teste")
+    ufs = st.multiselect("Selecione uma UF:", 
+                       options=df_faixa_etaria['UF'].unique(),
+                       placeholder="Escolha uma ou mútiplas UF",
+                       default=df_faixa_etaria["UF"].unique())
 
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
+if ufs:
+    df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["UF"].isin(ufs)]
+else:
+    df_faixa_etaria_filtrado = df_faixa_etaria
 
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
+frequencia_faixa_etaria, frequencia_df_faixa_etaria = pegar_frequencias(
+    df_faixa_etaria_filtrado,
+    "FAIXA_ETARIA",
+    "Faixa Etária",
+    "Frequência"
 )
 
-''
-''
+faixa_etaria_barra = alt.Chart(frequencia_df_faixa_etaria).mark_bar(orient='horizontal').encode(
+    x=alt.X("Frequência"),
+    y=alt.Y("Faixa Etária", sort='-x'),
+    tooltip=["Faixa Etária", "Frequência"],
+    color=alt.Color("Faixa Etária", legend=None),
+).properties(
+    title=alt.TitleParams(
+        text="Distribuição de Docentes por Faixa Etária",
+        anchor='middle',
+        fontSize=20
+    ),
 
+    width=600,
+    height=400
+).interactive()
 
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
+st.altair_chart(faixa_etaria_barra, use_container_width=True)
 
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
