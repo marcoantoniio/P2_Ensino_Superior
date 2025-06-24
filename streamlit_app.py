@@ -138,8 +138,8 @@ sexo_barra=alt.Chart(frequencia_df_sexo).mark_arc(innerRadius=100).encode(
     title=alt.TitleParams(
         text="Distribuição de Docentes por Sexo",
         anchor='middle',
-        fontSize=20
-    )
+        fontSize=20,
+    ),
 
 ).interactive()
 
@@ -148,10 +148,7 @@ texto_central = alt.Chart(frequencia_df_sexo).mark_text(
     fontSize=50,
     fontWeight='bold',
     color='white'
-).encode(
-    x=alt.value(185),
-    y=alt.value(140)
-)
+).encode()
 
 texto_fatia = alt.Chart(frequencia_df_sexo).mark_text(
     radius=120, size=13, fontWeight="bold", color="white"
