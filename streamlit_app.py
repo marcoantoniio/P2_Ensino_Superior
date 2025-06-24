@@ -149,7 +149,7 @@ texto_central = alt.Chart(frequencia_df_sexo).mark_text(
     fontWeight='bold',
     color='white'
 ).encode(
-    x=alt.value(175),
+    x=alt.value(185),
     y=alt.value(140)
 )
 
