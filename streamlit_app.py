@@ -19,6 +19,12 @@ def get_data(path):
 df_faixa_etaria = get_data('data/tabela_doc_faixa_etaria.csv')
 df_cor_raca = get_data('data/tabela_doc_cor_raca.csv')
 df_sexo = get_data('data/tabela_doc_sexo.csv')
+df_escolaridade = get_data('data/tabela_doc_escol.csv')
+df_tprede = get_data('data/tabela_tp_rede.csv')
+df_acesso_internet = get_data('data/tabela_acesso_internet.csv')
+df_repositorio_inst = get_data('data/tabela_repositorio_inst.csv')
+df_repo = get_data('data/tabela_uf.csv')
+df_uf = get_data('data/tabela_uf.csv')
 
 def pegar_frequencias(
     df: pd.DataFrame,
@@ -58,20 +64,42 @@ texto de apresentação
 
 with st.sidebar:
     st.header("Filtros")
-    st.subheader("Teste")
+    #st.subheader("Docentes")
     ufs = st.multiselect("Selecione uma UF:", 
-                       options=df_faixa_etaria['UF'].unique(),
+                       options=sorted(df_faixa_etaria['UF'].unique()),
                        placeholder="Escolha uma ou mútiplas UF",
                        default=df_faixa_etaria["UF"].unique())
+        
+    if ufs:
+        df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["UF"].isin(ufs)]
+        df_cor_raca_filtrado = df_cor_raca[df_cor_raca["UF"].isin(ufs)]
+        df_sexo_filtrado = df_sexo[df_sexo["UF"].isin(ufs)]
+        df_escol_filtrado = df_escolaridade[df_escolaridade["UF"].isin(ufs)]
+        df_tprede_filtrado = df_tprede[df_tprede["UF"].isin(ufs)]
+        df_acesso_internet_filtrado = df_acesso_internet[df_acesso_internet["UF"].isin(ufs)]
+        df_repositorio_inst_filtrado = df_repositorio_inst[df_repositorio_inst["UF"].isin(ufs)]
+        df_uf_filtrado = df_uf[df_uf["UF"].isin(ufs)]
 
-if ufs:
-    df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["UF"].isin(ufs)]
-    df_cor_raca_filtrado = df_cor_raca[df_cor_raca["UF"].isin(ufs)]
-    df_sexo_filtrado = df_sexo[df_sexo["UF"].isin(ufs)]
-else:
-    df_faixa_etaria_filtrado = df_faixa_etaria
-    df_cor_raca_filtrado = df_cor_raca
-    df_sexo_filtrado = df_sexo
+    else:
+        df_faixa_etaria_filtrado = df_faixa_etaria
+        df_cor_raca_filtrado = df_cor_raca
+        df_sexo_filtrado = df_sexo
+        df_escol_filtrado = df_escolaridade
+        df_tprede_filtrado = df_tprede
+        df_acesso_internet_filtrado = df_acesso_internet
+        df_repositorio_inst_filtrado = df_repositorio_inst
+        df_uf_filtrado = df_uf
+
+    ies = st.multiselect("Selecione uma IES:",
+                         options=sorted(df_faixa_etaria_filtrado["NO_IES"].unique()),
+                         placeholder="Escolha uma ou mútiplas IES")
+
+    if ies:
+        df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["NO_IES"].isin(ies)]
+        df_cor_raca_filtrado = df_cor_raca[df_cor_raca["NO_IES"].isin(ies)]
+        df_sexo_filtrado = df_sexo[df_sexo["NO_IES"].isin(ies)]
+        df_escol_filtrado = df_escolaridade[df_escolaridade["NO_IES"].isin(ies)]
+
 
 frequencia_faixa_etaria, frequencia_df_faixa_etaria = pegar_frequencias(
     df_faixa_etaria_filtrado,
@@ -94,6 +122,41 @@ frequencia_sexo, frequencia_df_sexo = pegar_frequencias(
     "Frequência"
 )
 
+frequencia_escol, frequencia_df_escol = pegar_frequencias(
+    df_escol_filtrado,
+    "ESCOLARIDADE",
+    "Escolaridade",
+    "Frequência"
+)
+
+frequencia_tprede, frequencia_df_tprede = pegar_frequencias(
+    df_tprede_filtrado,
+    "TP_REDE",
+    "Tipo de rede",
+    "Frequência"
+)
+
+frequencia_acesso_internet, frequencia_df_acesso_internet = pegar_frequencias(
+    df_acesso_internet_filtrado,
+    "IN_SERVICO_INTERNET",
+    "Acesso a Internet",
+    "Frequência"
+)
+
+frequencia_repositorio, frequencia_df_repositorio = pegar_frequencias(
+    df_repositorio_inst_filtrado,
+    "IN_REPOSITORIO_INSTITUCIONAL",
+    "Repositório Acadêmico",
+    "Frequência"
+)
+
+frequencia_uf, frequencia_df_uf = pegar_frequencias(
+    df_uf_filtrado,
+    "UF",
+    "Unidade Federativa",
+    "Frequência"
+)
+
 frequencia_df_sexo['Percentual'] = frequencia_df_sexo['Frequência'] / frequencia_df_sexo['Frequência'].sum() * 100
 frequencia_df_sexo['Percentual_str'] = frequencia_df_sexo['Percentual'].map(lambda x: f"{x:.1f}%")
 
@@ -109,10 +172,14 @@ faixa_etaria_barra = alt.Chart(frequencia_df_faixa_etaria).mark_bar(orient='hori
         fontSize=20
     ),
     height=835
-).interactive()
+).interactive().configure_axisY(
+    labelFontSize=15
+).configure_axisX(
+    labelFontSize=15
+)
 
 cor_raca_barra = alt.Chart(frequencia_df_cor_raca).mark_bar(orient='vertical').encode(
-    x=alt.X("Cor_Raca", sort='-y', axis=alt.Axis(labelAngle=0)),
+    x=alt.X("Cor_Raca", sort='-y', axis=alt.Axis(labelAngle=65)),
     y=alt.Y("Frequência"),
     tooltip=["Cor_Raca", "Frequência"],
     color=alt.Color("Cor_Raca", legend=None)
@@ -125,7 +192,11 @@ cor_raca_barra = alt.Chart(frequencia_df_cor_raca).mark_bar(orient='vertical').e
 
     width=600,
     height=400
-).interactive()
+).interactive().configure_axisY(
+    labelFontSize=20
+).configure_axisX(
+    labelFontSize=13
+)
 
 sexo_barra=alt.Chart(frequencia_df_sexo).mark_arc(innerRadius=100).encode(
     theta=alt.Theta(field="Frequência", type="quantitative"),
@@ -151,23 +222,117 @@ texto_central = alt.Chart(frequencia_df_sexo).mark_text(
 ).encode()
 
 texto_fatia = alt.Chart(frequencia_df_sexo).mark_text(
-    radius=120, size=13, fontWeight="bold", color="white"
+    radius=120, size=14, fontWeight="bold", color="white"
 ).encode(
     theta=alt.Theta(field="Frequência", type="quantitative", stack="center"),
     text='Percentual_str:N',
     order=alt.Order('Frequência', sort='descending')
 )
 
-sexo_pizza = sexo_barra + texto_central + texto_fatia
+sexo_pizza = (sexo_barra + 
+              texto_central + 
+              texto_fatia)
 
 
-col_esquerda, col_direita = st.columns([1, 2], gap="large")
+barra_escolaridade = alt.Chart(frequencia_df_escol).mark_bar(orient="vertical").encode(
+    x=alt.X("Escolaridade", sort="-y", axis=alt.Axis(labelAngle=0)),
+    y=alt.Y("Frequência"),
+    tooltip=["Escolaridade", "Frequência"],
+    color=alt.Color("Escolaridade")
+).properties(
+    title=alt.TitleParams(
+        text="Nivel de escolaridade dos docentes",
+        anchor="middle",
+        fontSize=20
+    ),
+    height=400
+).interactive().configure_axisY(
+    labelFontSize=20
+).configure_axisX(
+    labelFontSize=15
+)
 
-with col_esquerda:
-    st.altair_chart(sexo_pizza, use_container_width=True)
+barra_tprede = alt.Chart(frequencia_df_tprede).mark_bar(orient="vertical").encode(
+    x=alt.X("Tipo de rede", sort='-y', axis=alt.Axis(labelAngle=0)),
+    y=alt.Y("Frequência"),
+    tooltip=["Tipo de rede", "Frequência"],
+    color=alt.Color("Tipo de rede", legend=None)
+).properties(
+    title=alt.TitleParams("Tipos de rede",
+        anchor="middle",
+        fontSize=20
+    ),
+    width=900,
+    height=500
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=20
+).interactive()
+
+barra_acesso_internet = alt.Chart(frequencia_df_acesso_internet).mark_bar(orient="horizontal").encode(
+    x=alt.X("Frequência"),
+    y=alt.Y("Acesso a Internet", sort='-y'),
+    tooltip=["Frequência", "Acesso a Internet"],
+    color=alt.Color("Acesso a Internet", legend=None)
+).properties(
+    title=alt.TitleParams("Universidades com acesso a internet",
+            anchor="middle")
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=12
+).interactive()
+
+barra_repositorio = alt.Chart(frequencia_df_repositorio).mark_bar(orient="horizontal").encode(
+    x=alt.X("Frequência"),
+    y=alt.Y("Repositório Acadêmico", sort="-y"),
+    tooltip=["Frequência", "Repositório Acadêmico"],
+    color=alt.Color("Repositório Acadêmico", legend=None)
+).properties(
+    title=alt.TitleParams("Universidades no repositorio",
+                          anchor="middle")
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=12
+).interactive()
+
+
+pizza_df = alt.Chart(frequencia_df_uf).mark_arc(innerRadius=100).encode(
+    theta=alt.Theta(field="Frequência", type="quantitative"),
+    color=alt.Color(field="Unidade Federativa", type="nominal", scale=alt.Scale(
+        domain=["DF", "GO", "MG"],
+        range=['#4c78a8', '#f58518', '#e45756']))
+).properties(
+
+)
+
+aba1, aba2 = st.tabs(["Docentes", "Redes"])
+
+with aba1:
+    col_esquerda, col_direita = st.columns([1, 2], gap="large")
+    with col_esquerda:
+        st.altair_chart(sexo_pizza, use_container_width=True)
+        st.markdown("---")
+        st.altair_chart(cor_raca_barra, use_container_width=True)
+        
+    with col_direita:
+        st.altair_chart(faixa_etaria_barra, use_container_width=True)
+
+    st.altair_chart(barra_escolaridade, use_container_width=True)
+    
+with aba2:
+    col1, col2, col3 = st.columns(3, gap="large")
+
+    with col1:
+        st.altair_chart(barra_acesso_internet, use_container_width=True)
+
+    with col2:
+        st.altair_chart(pizza_df)
+        
+    with col3:
+        st.altair_chart(barra_repositorio, use_container_width=True)
     st.markdown("---")
-    st.altair_chart(cor_raca_barra, use_container_width=True)
-    
-with col_direita:
-    st.altair_chart(faixa_etaria_barra, use_container_width=True)
-    
+    st.markdown("<h3 style='text-align: center;'>Visão Geral do Tipo de Rede</h3>", unsafe_allow_html=True)
+    st.altair_chart(barra_tprede, use_container_width=True)
