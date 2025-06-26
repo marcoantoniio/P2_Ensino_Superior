@@ -4,8 +4,8 @@ import altair as alt
 from pathlib import Path
 
 st.set_page_config(
-    page_title='Análise dos dados do Ensino Superior',
-    page_icon=':bar_chart:',
+    page_title='Análise dos dados do ensino superior do Brasil',
+    page_icon=':male-detective:',
     layout='wide'
 )
 
@@ -25,6 +25,8 @@ df_acesso_internet = get_data('data/tabela_acesso_internet.csv')
 df_repositorio_inst = get_data('data/tabela_repositorio_inst.csv')
 df_repo = get_data('data/tabela_uf.csv')
 df_uf = get_data('data/tabela_uf.csv')
+df_turnos = get_data('data/qtd_total_vaga.csv')
+df_concluintes = get_data('data/qtd_total_concluintes.csv')
 
 def pegar_frequencias(
     df: pd.DataFrame,
@@ -54,22 +56,22 @@ def pegar_frequencias(
     return frequencia_total, frequencia_index
 
 '''
-# Análise dos dados do ensino superior
+# Análise dos dados do ensino superior do Brasil :bar_chart:
 
-texto de apresentação
+A educação é a base para a formação de bons profissionais. 
+Com isso em mente, este dashboard tem como objetivo analisar os dados das universidades e 
+cursos que integram a Região Integrada de Desenvolvimento do Distrito Federal e Entorno (RIDE).
 '''
 
 ''
 ''
-
+#TO DO: Filtro por cor e raca
+#TO DO: Filtro por nível de escolaridade
 with st.sidebar:
-    st.header("Filtros")
-    #st.subheader("Docentes")
-    ufs = st.multiselect("Selecione uma UF:", 
+    st.header("Filtros Gerais")
+    ufs = st.multiselect("Unidades Federativas que Integram o RIDE:", 
                        options=sorted(df_faixa_etaria['UF'].unique()),
-                       placeholder="Escolha uma ou mútiplas UF",
-                       default=df_faixa_etaria["UF"].unique())
-        
+                       placeholder="Escolha mútiplas UF")     
     if ufs:
         df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["UF"].isin(ufs)]
         df_cor_raca_filtrado = df_cor_raca[df_cor_raca["UF"].isin(ufs)]
@@ -79,6 +81,8 @@ with st.sidebar:
         df_acesso_internet_filtrado = df_acesso_internet[df_acesso_internet["UF"].isin(ufs)]
         df_repositorio_inst_filtrado = df_repositorio_inst[df_repositorio_inst["UF"].isin(ufs)]
         df_uf_filtrado = df_uf[df_uf["UF"].isin(ufs)]
+        df_turnos_filtrado = df_turnos[df_turnos["UF"].isin(ufs)]
+        df_concluintes_filtrado = df_concluintes[df_concluintes["UF"].isin(ufs)]
 
     else:
         df_faixa_etaria_filtrado = df_faixa_etaria
@@ -89,17 +93,76 @@ with st.sidebar:
         df_acesso_internet_filtrado = df_acesso_internet
         df_repositorio_inst_filtrado = df_repositorio_inst
         df_uf_filtrado = df_uf
+        df_turnos_filtrado = df_turnos
+        df_concluintes_filtrado = df_concluintes
 
-    ies = st.multiselect("Selecione uma IES:",
+    ies = st.multiselect("Instituições de Ensino Superior:",
                          options=sorted(df_faixa_etaria_filtrado["NO_IES"].unique()),
-                         placeholder="Escolha uma ou mútiplas IES")
-
+                         placeholder="Escolha mútiplas IES")
     if ies:
         df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["NO_IES"].isin(ies)]
         df_cor_raca_filtrado = df_cor_raca[df_cor_raca["NO_IES"].isin(ies)]
         df_sexo_filtrado = df_sexo[df_sexo["NO_IES"].isin(ies)]
         df_escol_filtrado = df_escolaridade[df_escolaridade["NO_IES"].isin(ies)]
+        df_acesso_internet_filtrado = df_acesso_internet[df_acesso_internet["NO_IES"].isin(ies)]
+        df_tprede_filtrado = df_tprede[df_tprede["NO_IES"].isin(ies)]
+        df_repositorio_inst_filtrado = df_repositorio_inst[df_repositorio_inst["NO_IES"].isin(ies)]
+        df_turnos_filtrado = df_turnos[df_turnos["NO_IES"].isin(ies)]
+        df_uf_filtrado = df_uf[df_uf["NO_IES"].isin(ies)]
+        df_concluintes_filtrado = df_concluintes[df_concluintes["NO_IES"].isin(ies)]
 
+    st.markdown("---")
+    st.subheader("Filtro por Número de Concluintes")
+
+    contagens = df_concluintes_filtrado['CURSO'].value_counts()
+    if not contagens.empty:
+        min_concluintes = int(contagens.min())
+        max_concluintes = int(contagens.max())
+        cursos_qtd_selecionada = st.slider(
+            "Filtre cursos pelo nº de concluintes:",
+            min_value=min_concluintes,
+            max_value=max_concluintes,
+            value=(min_concluintes, max_concluintes)
+        )
+        cursos_para_manter = contagens[
+            (contagens >= cursos_qtd_selecionada[0]) & (contagens <= cursos_qtd_selecionada[1])
+        ].index
+        df_concluintes_filtrado = df_concluintes_filtrado[
+            df_concluintes_filtrado['CURSO'].isin(cursos_para_manter)
+        ]
+    cor_raca_conc = st.multiselect(
+        "Cor e Raça",
+        options=sorted(df_concluintes["RAÇA"].unique()),
+        placeholder="Escolha múltiplas Cores e Raças")
+    if cor_raca_conc:
+        df_concluintes_filtrado = df_concluintes_filtrado[df_concluintes_filtrado['RAÇA'].isin(cor_raca_conc)]
+
+    st.markdown("---")
+    st.markdown("Filtro por Frequência de Vagas")
+
+    contagens_turnos = df_turnos_filtrado["CURSO"].value_counts()
+    if not contagens_turnos.empty:
+        min_freq = int(contagens_turnos.min())
+        max_freq = int(contagens_turnos.max())
+        freq_selecionada = st.slider(
+            "Filtrar cursos pela frequência de turnos/ofertas:",
+            min_value=min_freq,
+            max_value=max_freq,
+            value=(min_freq, max_freq)
+        )
+        cursos_para_manter = contagens_turnos[
+            (contagens_turnos >= freq_selecionada[0]) & (contagens_turnos <= freq_selecionada[1])
+        ].index
+        df_turnos_filtrado = df_turnos_filtrado[
+            df_turnos_filtrado['CURSO'].isin(cursos_para_manter)
+        ]
+    turnos_opt = st.multiselect(
+        "Turnos",
+        options=sorted(df_turnos["TURNO"].unique()),
+        placeholder="Escolha mútiplos turnos"
+    )
+    if turnos_opt:
+        df_turnos_filtrado = df_turnos[df_turnos["TURNO"].isin(turnos_opt)]
 
 frequencia_faixa_etaria, frequencia_df_faixa_etaria = pegar_frequencias(
     df_faixa_etaria_filtrado,
@@ -157,8 +220,39 @@ frequencia_uf, frequencia_df_uf = pegar_frequencias(
     "Frequência"
 )
 
+frequencia_turnos, frequencia_df_turnos = pegar_frequencias(
+    df_turnos_filtrado,
+    "TURNO",
+    "Turno",
+    "Frequência"
+)
+
+frequencia_turno_cursos, frequencia_df_turno_cursos = pegar_frequencias(
+    df_turnos_filtrado,
+    "CURSO",
+    "Curso",
+    "Frequência"
+)
+
+frequencia_concluintes, frequencia_df_concluintes = pegar_frequencias(
+    df_concluintes_filtrado,
+    "CURSO",
+    "Curso",
+    "Frequência"
+)
+
+frequencia_raca_conc, frequencia_df_raca_conc = pegar_frequencias(
+    df_concluintes_filtrado,
+    "RAÇA",
+    "Raça",
+    "Frequência"
+)
+
 frequencia_df_sexo['Percentual'] = frequencia_df_sexo['Frequência'] / frequencia_df_sexo['Frequência'].sum() * 100
 frequencia_df_sexo['Percentual_str'] = frequencia_df_sexo['Percentual'].map(lambda x: f"{x:.1f}%")
+
+frequencia_df_uf['Percentual'] = frequencia_df_uf['Frequência'] / frequencia_df_uf['Frequência'].sum() * 100
+frequencia_df_uf['Percentual_str'] = frequencia_df_uf['Percentual'].map(lambda x: f"{x:.1f}%")
 
 faixa_etaria_barra = alt.Chart(frequencia_df_faixa_etaria).mark_bar(orient='horizontal').encode(
     x=alt.X("Frequência"),
@@ -179,7 +273,7 @@ faixa_etaria_barra = alt.Chart(frequencia_df_faixa_etaria).mark_bar(orient='hori
 )
 
 cor_raca_barra = alt.Chart(frequencia_df_cor_raca).mark_bar(orient='vertical').encode(
-    x=alt.X("Cor_Raca", sort='-y', axis=alt.Axis(labelAngle=65)),
+    x=alt.X("Cor_Raca", sort='-y', axis=alt.Axis(labelAngle=0)),
     y=alt.Y("Frequência"),
     tooltip=["Cor_Raca", "Frequência"],
     color=alt.Color("Cor_Raca", legend=None)
@@ -235,10 +329,10 @@ sexo_pizza = (sexo_barra +
 
 
 barra_escolaridade = alt.Chart(frequencia_df_escol).mark_bar(orient="vertical").encode(
-    x=alt.X("Escolaridade", sort="-y", axis=alt.Axis(labelAngle=0)),
+    x=alt.X("Escolaridade", sort="-y", axis=alt.Axis(labelAngle=45)),
     y=alt.Y("Frequência"),
     tooltip=["Escolaridade", "Frequência"],
-    color=alt.Color("Escolaridade")
+    color=alt.Color("Escolaridade", legend=None)
 ).properties(
     title=alt.TitleParams(
         text="Nivel de escolaridade dos docentes",
@@ -268,7 +362,7 @@ barra_tprede = alt.Chart(frequencia_df_tprede).mark_bar(orient="vertical").encod
     labelFontSize=15
 ).configure_axisY(
     labelFontSize=20
-).interactive()
+)
 
 barra_acesso_internet = alt.Chart(frequencia_df_acesso_internet).mark_bar(orient="horizontal").encode(
     x=alt.X("Frequência"),
@@ -282,7 +376,7 @@ barra_acesso_internet = alt.Chart(frequencia_df_acesso_internet).mark_bar(orient
     labelFontSize=15
 ).configure_axisY(
     labelFontSize=12
-).interactive()
+)
 
 barra_repositorio = alt.Chart(frequencia_df_repositorio).mark_bar(orient="horizontal").encode(
     x=alt.X("Frequência"),
@@ -296,43 +390,142 @@ barra_repositorio = alt.Chart(frequencia_df_repositorio).mark_bar(orient="horizo
     labelFontSize=15
 ).configure_axisY(
     labelFontSize=12
-).interactive()
+)
 
 
-pizza_df = alt.Chart(frequencia_df_uf).mark_arc(innerRadius=100).encode(
+pizza_uf = alt.Chart(frequencia_df_uf).mark_arc(innerRadius=100).encode(
     theta=alt.Theta(field="Frequência", type="quantitative"),
     color=alt.Color(field="Unidade Federativa", type="nominal", scale=alt.Scale(
         domain=["DF", "GO", "MG"],
         range=['#4c78a8', '#f58518', '#e45756']))
 ).properties(
-
+    title=alt.TitleParams("Universidades por Unidade Federativa",
+                          anchor="middle")
 )
 
-aba1, aba2 = st.tabs(["Docentes", "Redes"])
+texto_central_uf = alt.Chart(frequencia_df_uf).mark_text(
+    text=f'{frequencia_df_uf["Frequência"].sum()}',
+    fontSize=50,
+    fontWeight='bold',
+    color='white'
+).encode()
+
+texto_fatia_uf = alt.Chart(frequencia_df_uf).mark_text(
+    radius=120, size=14, fontWeight="bold", color="white"
+).encode(
+    theta=alt.Theta(field="Frequência", type="quantitative", stack="center"),
+    text='Percentual_str:N',
+    order=alt.Order('Frequência', sort='descending')
+)
+
+grafico_final_uf = (pizza_uf 
+                    + texto_central_uf 
+                    + texto_fatia_uf)
+
+vagas_barra = alt.Chart(frequencia_df_turnos).mark_bar(orient="horizontal").encode(
+    x=alt.X("Frequência"),
+    y=alt.Y("Turno", sort="-x"),
+    tooltip=["Frequência", "Turno"],
+    color=alt.Color("Turno", legend=None)
+)
+
+concluintes_bar = alt.Chart(frequencia_df_concluintes).mark_bar(orient="vertical").encode(
+    x=alt.X("Curso", sort="-y", axis=alt.Axis(labelAngle=45)),
+    y=alt.Y("Frequência"),
+    tooltip=["Curso", "Frequência"],
+    color=alt.Color("Curso", legend=None)
+).properties(
+    title=alt.TitleParams("Total de concluintes por curso",
+                          anchor="middle")
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=15
+)
+
+concluintes_cor_raca_bar = alt.Chart(frequencia_df_raca_conc).mark_bar(orient="horizontal").encode(
+    x=alt.X("Frequência"),
+    y=alt.Y("Raça", sort="-x"),
+    tooltip=["Raça", "Frequência"],
+    color=alt.Color("Raça", legend=None)
+).properties(
+    title=alt.TitleParams("Total de concluintes por cor e raça",
+                          anchor="middle")
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=12
+)
+
+turnos_bar = alt.Chart(frequencia_df_turnos).mark_bar(orient="horizontal").encode(
+    x=alt.X("Frequência"),
+    y=alt.Y("Turno", sort="-x"),
+    tooltip=["Frequência", "Turno"],
+    color=alt.Color("Turno", legend=None)
+).properties(
+    title=alt.TitleParams("Total de vagas disponíveis por turno",
+                          anchor="middle")
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=12
+)
+
+turnos_cursos_bar = alt.Chart(frequencia_df_turno_cursos).mark_bar(orient="vertical").encode(
+    x=alt.X("Curso", sort="-y", axis=alt.Axis(labelAngle=45)),
+    y=alt.Y("Frequência"),
+    tooltip=["Curso", "Frequência"],
+    color=alt.Color("Curso", legend=None)
+).properties(
+    title=alt.TitleParams("Total de vagas disponíveis por curso",
+                          anchor="middle")
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=15
+)
+
+aba1, aba2, aba3, aba4 = st.tabs(["Docentes", "Redes", "Concluintes", "Vagas"])
 
 with aba1:
     col_esquerda, col_direita = st.columns([1, 2], gap="large")
     with col_esquerda:
         st.altair_chart(sexo_pizza, use_container_width=True)
         st.markdown("---")
-        st.altair_chart(cor_raca_barra, use_container_width=True)
+        st.altair_chart(barra_escolaridade, use_container_width=True)
+        
         
     with col_direita:
         st.altair_chart(faixa_etaria_barra, use_container_width=True)
 
-    st.altair_chart(barra_escolaridade, use_container_width=True)
+    st.altair_chart(cor_raca_barra, use_container_width=True)
     
 with aba2:
     col1, col2, col3 = st.columns(3, gap="large")
 
     with col1:
         st.altair_chart(barra_acesso_internet, use_container_width=True)
+        st.altair_chart(barra_tprede, use_container_width=True)
 
     with col2:
-        st.altair_chart(pizza_df)
+        st.altair_chart(grafico_final_uf)
         
     with col3:
         st.altair_chart(barra_repositorio, use_container_width=True)
-    st.markdown("---")
-    st.markdown("<h3 style='text-align: center;'>Visão Geral do Tipo de Rede</h3>", unsafe_allow_html=True)
-    st.altair_chart(barra_tprede, use_container_width=True)
+
+with aba3:
+    colun1, colun2 = st.columns(2, gap="large")
+    with colun1:
+        st.altair_chart(concluintes_cor_raca_bar, use_container_width=True)
+    st.altair_chart(concluintes_bar, use_container_width=True)
+
+with aba4:
+    coluna1, coluna2 = st.columns(2, gap="large")
+    with coluna1:
+        st.altair_chart(turnos_bar, use_container_width=True)
+    st.altair_chart(turnos_cursos_bar, use_container_width=True)
+    
+
+
+#TO DO: heatmap do tipo de rede e acesso a internet
+#TO DO: scatter plot com docentes, cor e raca e escolaridade
