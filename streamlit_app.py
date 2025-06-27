@@ -327,24 +327,24 @@ cor_raca_barra = alt.Chart(frequencia_df_cor_raca).mark_bar(orient='vertical').e
     labelFontSize=13
 )
 
-sexo_barra=alt.Chart(frequencia_df_sexo).mark_arc(innerRadius=100).encode(
+sexo_barra = alt.Chart(frequencia_df_sexo).mark_arc(innerRadius=100).encode(
     theta=alt.Theta(field="Frequência", type="quantitative"),
     color=alt.Color(field="Sexo", type="nominal", scale=alt.Scale(
         domain=["FEM", "MASC"],
         range=["#ff69b4", "#1f77b4"]
     )),
+    order=alt.Order('Sexo', sort='ascending'),
     tooltip=["Sexo", "Frequência"]
 ).properties(
     title=alt.TitleParams(
         text="Distribuição de Docentes por Sexo",
         anchor='middle',
         fontSize=20,
-    ),
-
+    )
 ).interactive()
 
 texto_central = alt.Chart(frequencia_df_sexo).mark_text(
-    text=f'{frequencia_df_sexo["Frequência"].sum()}', 
+    text=str(frequencia_df_sexo["Frequência"].sum()),
     fontSize=50,
     fontWeight='bold',
     color='white'
@@ -355,7 +355,7 @@ texto_fatia = alt.Chart(frequencia_df_sexo).mark_text(
 ).encode(
     theta=alt.Theta(field="Frequência", type="quantitative", stack="center"),
     text='Percentual_str:N',
-    order=alt.Order('Frequência', sort='descending')
+    order=alt.Order('Sexo', sort='ascending')
 )
 
 sexo_pizza = (sexo_barra + 
