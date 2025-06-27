@@ -1,6 +1,7 @@
 # :bar_chart: Dashboard analisando as universidades e os cursos
 
-Um dashboard simples analisando os dados das universidades da RIDE e os curso
+Um dashboard simples analisando os dados das universidades da RIDE e os curso.
+
 **Para visualizar todos os valores, utilize a página no modo escuro.**
 
 ### Como rodar na sua máquina
