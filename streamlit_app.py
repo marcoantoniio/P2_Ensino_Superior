@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 from pathlib import Path
+import plotly.graph_objects as go
+import geopandas as gpd
 
 st.set_page_config(
     page_title='Análise dos dados do ensino superior do Brasil',
@@ -11,22 +13,40 @@ st.set_page_config(
 
 @st.cache_data
 def get_data(path):
-    DATA_FILENAME = Path(__file__).parent/path
-    data_df = pd.read_csv(DATA_FILENAME)
+    DATA_FILENAME = Path(__file__).parent / path
+    return pd.read_csv(DATA_FILENAME)
 
-    return data_df
+file_paths = {
+    'df_faixa_etaria': 'data/tabela_doc_faixa_etaria.csv',
+    'df_cor_raca': 'data/tabela_doc_cor_raca.csv',
+    'df_sexo': 'data/tabela_doc_sexo.csv',
+    'df_escolaridade': 'data/tabela_doc_escol.csv',
+    'df_tprede': 'data/tabela_tp_rede.csv',
+    'df_acesso_internet': 'data/tabela_acesso_internet.csv',
+    'df_repositorio_inst': 'data/tabela_repositorio_inst.csv',
+    'df_repo': 'data/tabela_uf.csv',
+    'df_uf': 'data/tabela_uf.csv',
+    'df_turnos': 'data/qtd_total_vaga.csv',
+    'df_concluintes': 'data/qtd_total_concluintes.csv',
+    'df_escol_cor': 'data/tabela_doc_completa.csv',
+    'df_tabela_mapa': 'data/tabela_mapa.csv'
+}
 
-df_faixa_etaria = get_data('data/tabela_doc_faixa_etaria.csv')
-df_cor_raca = get_data('data/tabela_doc_cor_raca.csv')
-df_sexo = get_data('data/tabela_doc_sexo.csv')
-df_escolaridade = get_data('data/tabela_doc_escol.csv')
-df_tprede = get_data('data/tabela_tp_rede.csv')
-df_acesso_internet = get_data('data/tabela_acesso_internet.csv')
-df_repositorio_inst = get_data('data/tabela_repositorio_inst.csv')
-df_repo = get_data('data/tabela_uf.csv')
-df_uf = get_data('data/tabela_uf.csv')
-df_turnos = get_data('data/qtd_total_vaga.csv')
-df_concluintes = get_data('data/qtd_total_concluintes.csv')
+dataframes = {name: get_data(path) for name, path in file_paths.items()}
+
+df_faixa_etaria = dataframes['df_faixa_etaria']
+df_cor_raca = dataframes['df_cor_raca']
+df_sexo = dataframes['df_sexo']
+df_escolaridade = dataframes['df_escolaridade']
+df_tprede = dataframes['df_tprede']
+df_acesso_internet = dataframes['df_acesso_internet']
+df_repositorio_inst = dataframes['df_repositorio_inst']
+df_repo = dataframes['df_repo']
+df_uf = dataframes['df_uf']
+df_turnos = dataframes['df_turnos']
+df_concluintes = dataframes['df_concluintes']
+df_escol_cor = dataframes['df_escol_cor']
+df_tabela_mapa = dataframes['df_tabela_mapa']
 
 def pegar_frequencias(
     df: pd.DataFrame,
@@ -65,52 +85,55 @@ cursos que integram a Região Integrada de Desenvolvimento do Distrito Federal e
 
 ''
 ''
-#TO DO: Filtro por cor e raca
-#TO DO: Filtro por nível de escolaridade
+
 with st.sidebar:
     st.header("Filtros Gerais")
-    ufs = st.multiselect("Unidades Federativas que Integram o RIDE:", 
-                       options=sorted(df_faixa_etaria['UF'].unique()),
-                       placeholder="Escolha mútiplas UF")     
+
+    dfs_para_filtrar = {
+        'faixa_etaria': df_faixa_etaria,
+        'cor_raca': df_cor_raca,
+        'sexo': df_sexo,
+        'escolaridade': df_escolaridade,
+        'tprede': df_tprede,
+        'acesso_internet': df_acesso_internet,
+        'repositorio_inst': df_repositorio_inst,
+        'uf': df_uf,
+        'turnos': df_turnos,
+        'concluintes': df_concluintes,
+    }
+
+    ufs = st.multiselect(
+        "Unidades Federativas que Integram o RIDE:",
+        options=sorted(df_faixa_etaria['UF'].unique()),
+        placeholder="Escolha múltiplas UF"
+    )
     if ufs:
-        df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["UF"].isin(ufs)]
-        df_cor_raca_filtrado = df_cor_raca[df_cor_raca["UF"].isin(ufs)]
-        df_sexo_filtrado = df_sexo[df_sexo["UF"].isin(ufs)]
-        df_escol_filtrado = df_escolaridade[df_escolaridade["UF"].isin(ufs)]
-        df_tprede_filtrado = df_tprede[df_tprede["UF"].isin(ufs)]
-        df_acesso_internet_filtrado = df_acesso_internet[df_acesso_internet["UF"].isin(ufs)]
-        df_repositorio_inst_filtrado = df_repositorio_inst[df_repositorio_inst["UF"].isin(ufs)]
-        df_uf_filtrado = df_uf[df_uf["UF"].isin(ufs)]
-        df_turnos_filtrado = df_turnos[df_turnos["UF"].isin(ufs)]
-        df_concluintes_filtrado = df_concluintes[df_concluintes["UF"].isin(ufs)]
+        for nome, df in dfs_para_filtrar.items():
+            if 'UF' in df.columns:
+                dfs_para_filtrar[nome] = df[df["UF"].isin(ufs)]
 
-    else:
-        df_faixa_etaria_filtrado = df_faixa_etaria
-        df_cor_raca_filtrado = df_cor_raca
-        df_sexo_filtrado = df_sexo
-        df_escol_filtrado = df_escolaridade
-        df_tprede_filtrado = df_tprede
-        df_acesso_internet_filtrado = df_acesso_internet
-        df_repositorio_inst_filtrado = df_repositorio_inst
-        df_uf_filtrado = df_uf
-        df_turnos_filtrado = df_turnos
-        df_concluintes_filtrado = df_concluintes
-
-    ies = st.multiselect("Instituições de Ensino Superior:",
-                         options=sorted(df_faixa_etaria_filtrado["NO_IES"].unique()),
-                         placeholder="Escolha mútiplas IES")
+    opcoes_ies = sorted(dfs_para_filtrar['faixa_etaria']["NO_IES"].unique())
+    ies = st.multiselect(
+        "Instituições de Ensino Superior:",
+        options=opcoes_ies,
+        placeholder="Escolha múltiplas IES"
+    )
     if ies:
-        df_faixa_etaria_filtrado = df_faixa_etaria[df_faixa_etaria["NO_IES"].isin(ies)]
-        df_cor_raca_filtrado = df_cor_raca[df_cor_raca["NO_IES"].isin(ies)]
-        df_sexo_filtrado = df_sexo[df_sexo["NO_IES"].isin(ies)]
-        df_escol_filtrado = df_escolaridade[df_escolaridade["NO_IES"].isin(ies)]
-        df_acesso_internet_filtrado = df_acesso_internet[df_acesso_internet["NO_IES"].isin(ies)]
-        df_tprede_filtrado = df_tprede[df_tprede["NO_IES"].isin(ies)]
-        df_repositorio_inst_filtrado = df_repositorio_inst[df_repositorio_inst["NO_IES"].isin(ies)]
-        df_turnos_filtrado = df_turnos[df_turnos["NO_IES"].isin(ies)]
-        df_uf_filtrado = df_uf[df_uf["NO_IES"].isin(ies)]
-        df_concluintes_filtrado = df_concluintes[df_concluintes["NO_IES"].isin(ies)]
+        for nome, df in dfs_para_filtrar.items():
+            if 'NO_IES' in df.columns:
+                dfs_para_filtrar[nome] = df[df["NO_IES"].isin(ies)]
 
+    df_faixa_etaria_filtrado = dfs_para_filtrar['faixa_etaria']
+    df_cor_raca_filtrado = dfs_para_filtrar['cor_raca']
+    df_sexo_filtrado = dfs_para_filtrar['sexo']
+    df_escol_filtrado = dfs_para_filtrar['escolaridade']
+    df_tprede_filtrado = dfs_para_filtrar['tprede']
+    df_acesso_internet_filtrado = dfs_para_filtrar['acesso_internet']
+    df_repositorio_inst_filtrado = dfs_para_filtrar['repositorio_inst']
+    df_uf_filtrado = dfs_para_filtrar['uf']
+    df_turnos_filtrado = dfs_para_filtrar['turnos']
+    df_concluintes_filtrado = dfs_para_filtrar['concluintes']
+    
     st.markdown("---")
     st.subheader("Filtro por Número de Concluintes")
 
@@ -118,22 +141,28 @@ with st.sidebar:
     if not contagens.empty:
         min_concluintes = int(contagens.min())
         max_concluintes = int(contagens.max())
-        cursos_qtd_selecionada = st.slider(
-            "Filtre cursos pelo nº de concluintes:",
-            min_value=min_concluintes,
-            max_value=max_concluintes,
-            value=(min_concluintes, max_concluintes)
-        )
-        cursos_para_manter = contagens[
-            (contagens >= cursos_qtd_selecionada[0]) & (contagens <= cursos_qtd_selecionada[1])
-        ].index
-        df_concluintes_filtrado = df_concluintes_filtrado[
-            df_concluintes_filtrado['CURSO'].isin(cursos_para_manter)
-        ]
+
+        if min_concluintes < max_concluintes:
+            cursos_qtd_selecionada = st.slider(
+                "Filtre cursos pelo nº de concluintes:",
+                min_value=min_concluintes,
+                max_value=max_concluintes,
+                value=(min_concluintes, max_concluintes)
+            )
+            cursos_para_manter = contagens[
+                (contagens >= cursos_qtd_selecionada[0]) & (contagens <= cursos_qtd_selecionada[1])
+            ].index
+            df_concluintes_filtrado = df_concluintes_filtrado[
+                df_concluintes_filtrado['CURSO'].isin(cursos_para_manter)
+            ]
+        else:
+            st.info(f"Todos os cursos na seleção têm {min_concluintes} concluintes.")
+
     cor_raca_conc = st.multiselect(
         "Cor e Raça",
-        options=sorted(df_concluintes["RAÇA"].unique()),
-        placeholder="Escolha múltiplas Cores e Raças")
+        options=sorted(df_concluintes_filtrado["RAÇA"].unique()),
+        placeholder="Escolha múltiplas Cores e Raças"
+    )
     if cor_raca_conc:
         df_concluintes_filtrado = df_concluintes_filtrado[df_concluintes_filtrado['RAÇA'].isin(cor_raca_conc)]
 
@@ -144,25 +173,31 @@ with st.sidebar:
     if not contagens_turnos.empty:
         min_freq = int(contagens_turnos.min())
         max_freq = int(contagens_turnos.max())
-        freq_selecionada = st.slider(
-            "Filtrar cursos pela frequência de turnos/ofertas:",
-            min_value=min_freq,
-            max_value=max_freq,
-            value=(min_freq, max_freq)
-        )
-        cursos_para_manter = contagens_turnos[
-            (contagens_turnos >= freq_selecionada[0]) & (contagens_turnos <= freq_selecionada[1])
-        ].index
-        df_turnos_filtrado = df_turnos_filtrado[
-            df_turnos_filtrado['CURSO'].isin(cursos_para_manter)
-        ]
+
+        if min_freq < max_freq:
+            freq_selecionada = st.slider(
+                "Filtrar cursos pela frequência de turnos/ofertas:",
+                min_value=min_freq,
+                max_value=max_freq,
+                value=(min_freq, max_freq)
+            )
+            cursos_para_manter_turnos = contagens_turnos[
+                (contagens_turnos >= freq_selecionada[0]) & (contagens_turnos <= freq_selecionada[1])
+            ].index
+            df_turnos_filtrado = df_turnos_filtrado[
+                df_turnos_filtrado['CURSO'].isin(cursos_para_manter_turnos)
+            ]
+        else:
+            st.info(f"Todos os cursos na seleção têm a mesma frequência de oferta.")
+    
     turnos_opt = st.multiselect(
         "Turnos",
-        options=sorted(df_turnos["TURNO"].unique()),
-        placeholder="Escolha mútiplos turnos"
+        options=sorted(df_turnos_filtrado["TURNO"].unique()),
+        placeholder="Escolha múltiplos turnos"
     )
     if turnos_opt:
-        df_turnos_filtrado = df_turnos[df_turnos["TURNO"].isin(turnos_opt)]
+        df_turnos_filtrado = df_turnos_filtrado[df_turnos_filtrado["TURNO"].isin(turnos_opt)]
+
 
 frequencia_faixa_etaria, frequencia_df_faixa_etaria = pegar_frequencias(
     df_faixa_etaria_filtrado,
@@ -485,7 +520,126 @@ turnos_cursos_bar = alt.Chart(frequencia_df_turno_cursos).mark_bar(orient="verti
     labelFontSize=15
 )
 
-aba1, aba2, aba3, aba4 = st.tabs(["Docentes", "Redes", "Concluintes", "Vagas"])
+df_agg = df_escol_cor.groupby(['ESCOLARIDADE', 'COR_RACA']).size().reset_index(name='quantidade')
+
+escol_cor_tree = alt.Chart(df_agg).mark_bar().encode(
+    x=alt.X('ESCOLARIDADE:N', title='Escolaridade', sort=None, axis=alt.Axis(labelAngle=0)),
+    y=alt.Y('sum(quantidade):Q',
+            axis=alt.Axis(title='Proporção de Docentes', format='%'),
+            stack='normalize'),
+
+    color=alt.Color('COR_RACA:N', title='Cor/Raça'),
+
+    tooltip=[
+        alt.Tooltip('ESCOLARIDADE:N', title='Escolaridade'),
+        alt.Tooltip('COR_RACA:N', title='Cor/Raça'),
+        alt.Tooltip('sum(quantidade):Q', title='Quantidade')
+    ]
+).properties(
+    title=alt.TitleParams("Composição de Cor/Raça por Nível de Escolaridade",
+        anchor="middle"),
+    width=600,
+    height=800
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=15
+)
+
+df_acesso_rede = pd.merge(df_acesso_internet_filtrado, df_tprede_filtrado, on=['NO_IES', 'UF'])
+
+base_acesso_rede = alt.Chart(df_acesso_rede).encode(
+    alt.X('TP_REDE:N', title='Tipo de Rede'),
+    alt.Y('UF:N', title='UF')
+).properties(
+    width=250,
+    height=200
+)
+
+heatmap_layer = base_acesso_rede.mark_rect().encode(
+    alt.Color('count():Q',
+              scale=alt.Scale(scheme='viridis'),
+              title='Nº de Instituições')
+)
+
+text_layer = base_acesso_rede.mark_text(baseline='middle').encode(
+    text=alt.Text('count():Q'),
+    color=alt.value('black')
+)
+
+df_acesso_rede_final = (heatmap_layer + text_layer).facet(
+    column=alt.Column('IN_SERVICO_INTERNET:N', title='Possui acesso à internet?')
+).properties(
+    title='Distribuição de Instituições por UF que possui ou não acesso à internet'
+).configure_axisX(
+    labelFontSize=15
+).configure_axisY(
+    labelFontSize=15
+).interactive()
+
+import pandas as pd
+import geopandas as gpd
+import plotly.graph_objects as go
+import requests
+
+geojson_url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
+geojson = requests.get(geojson_url).json()
+
+df_tabela_mapa = pd.DataFrame({
+    'estado': ['DF', 'GO', 'MG', 'SP'],
+    'valor': [61, 18, 3, 0]
+})
+
+gdf = gpd.GeoDataFrame.from_features(geojson["features"])
+gdf = gdf.set_index('sigla')
+
+gdf['valor'] = df_tabela_mapa.set_index('estado')['valor']
+gdf['valor'] = gdf['valor'].fillna(0)
+
+gdf['centroide'] = gdf.geometry.centroid
+gdf['lat'] = gdf['centroide'].y
+gdf['lon'] = gdf['centroide'].x
+
+choropleth = go.Choropleth(
+    geojson=geojson,
+    locations=gdf.index,
+    z=[v if v > 1 else None for v in gdf['valor']],
+    featureidkey="properties.sigla",
+    colorscale="Viridis",
+    marker_line_color='white',
+    marker_line_width=0.5,
+    colorbar_title="Valor"
+)
+
+text_annotations = go.Scattergeo(
+    lon=gdf.loc[gdf['valor'] > 1, 'lon'],
+    lat=gdf.loc[gdf['valor'] > 1, 'lat'],
+    text=gdf.loc[gdf['valor'] > 1].index,
+    mode='text',
+    textfont=dict(
+        size=14,
+        color='black',
+        family='Tahoma'
+    )
+)
+
+fig = go.Figure(data=[choropleth, text_annotations])
+
+fig.update_geos(
+    fitbounds="locations",
+    visible=False
+)
+
+fig.update_layout(
+    geo=dict(
+        bgcolor='rgba(0,0,0,0)'
+    ),
+    paper_bgcolor='rgba(0,0,0,0)',
+    margin={"r":0,"t":0,"l":0,"b":0}
+)
+
+
+aba1, aba2, aba3, aba4, aba5 = st.tabs(["Docentes", "Formados", "Redes", "Concluintes", "Vagas"])
 
 with aba1:
     col_esquerda, col_direita = st.columns([1, 2], gap="large")
@@ -499,8 +653,11 @@ with aba1:
         st.altair_chart(faixa_etaria_barra, use_container_width=True)
 
     st.altair_chart(cor_raca_barra, use_container_width=True)
-    
+
 with aba2:
+    st.altair_chart(escol_cor_tree, use_container_width=True)
+    
+with aba3:
     col1, col2, col3 = st.columns(3, gap="large")
 
     with col1:
@@ -508,24 +665,16 @@ with aba2:
         st.altair_chart(barra_tprede, use_container_width=True)
 
     with col2:
-        st.altair_chart(grafico_final_uf)
+        st.plotly_chart(fig, use_container_width=True)
+        st.altair_chart(df_acesso_rede_final)
         
     with col3:
         st.altair_chart(barra_repositorio, use_container_width=True)
 
-with aba3:
-    colun1, colun2 = st.columns(2, gap="large")
-    with colun1:
-        st.altair_chart(concluintes_cor_raca_bar, use_container_width=True)
+with aba4:
+    st.altair_chart(concluintes_cor_raca_bar)
     st.altair_chart(concluintes_bar, use_container_width=True)
 
-with aba4:
-    coluna1, coluna2 = st.columns(2, gap="large")
-    with coluna1:
-        st.altair_chart(turnos_bar, use_container_width=True)
+with aba5:
+    st.altair_chart(turnos_bar, use_container_width=True)
     st.altair_chart(turnos_cursos_bar, use_container_width=True)
-    
-
-
-#TO DO: heatmap do tipo de rede e acesso a internet
-#TO DO: scatter plot com docentes, cor e raca e escolaridade
