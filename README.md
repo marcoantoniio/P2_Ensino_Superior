@@ -2,7 +2,7 @@
 
 Um dashboard simples analisando os dados das universidades da RIDE e os curso.
 
-**Para visualizar todos os valores, utilize a página no modo escuro.**
+O projeto foi desenvolvido para ser visualizado em monitores com resolução **1920x1080p (Full HD)**. Em resoluções diferentes, alguns elementos da interface podem não ser exibidos corretamente.
 
 ### Como rodar na sua máquina
 
