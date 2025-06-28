@@ -4,6 +4,7 @@ import altair as alt
 from pathlib import Path
 import plotly.graph_objects as go
 import geopandas as gpd
+import requests
 
 st.set_page_config(
     page_title='Análise dos dados do ensino superior do Brasil',
@@ -576,11 +577,6 @@ df_acesso_rede_final = (heatmap_layer + text_layer).facet(
 ).configure_axisY(
     labelFontSize=15
 ).interactive()
-
-import pandas as pd
-import geopandas as gpd
-import plotly.graph_objects as go
-import requests
 
 geojson_url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
 geojson = requests.get(geojson_url).json()
