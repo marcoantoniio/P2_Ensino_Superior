@@ -10,7 +10,7 @@
 <p align="center">
    <h1 align="center">Descrição</h1>
    <p>
-      Este dashboard foi feito para compor a nota da matéria Análise Exploratória de Dados e Visualização, do curso Ciência de Dados e Inteligência Artificial. O principal objetivo é entender mais a fundo como as universidades e os cursos da RIDE se comportaram no ano de 2023, analisando dados como: quantidade de pessoas do sexo masculino e feminino; faixa etária dos docentes; nível de escolaridade; quantidade de formados em cada curso; entre outros.
+      Este dashboard foi feito para compor a nota da matéria Análise Exploratória de Dados e Visualização, do curso de bacharelado de Ciência de Dados e Inteligência Artificial. O principal objetivo é entender mais a fundo como as universidades e os cursos da RIDE se comportaram no ano de 2023, analisando dados como: quantidade de pessoas do sexo masculino e feminino; faixa etária dos docentes; nível de escolaridade; quantidade de formados em cada curso; entre outros.
    </p>
 </p>
 
